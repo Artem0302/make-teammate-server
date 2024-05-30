@@ -7,7 +7,6 @@ const uri =
 
 // Database and collection name
 const dbName = "make-teammate";
-const collectionName = "user-locations";
 
 async function startServer() {
   const client = new MongoClient(uri);
@@ -16,9 +15,8 @@ async function startServer() {
     console.log("Connected to the database");
 
     const db = client.db(dbName);
-    const collection = db.collection(collectionName);
 
-    apiProvider(collection);
+    apiProvider(db);
   } catch (err) {
     console.error("Failed to connect to the database", err);
   }

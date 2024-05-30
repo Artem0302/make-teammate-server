@@ -1,9 +1,15 @@
 const express = require("express");
+const { socketProvider } = require("./chat");
 
 const app = express();
-const PORT = 3000;
 
-function apiProvider(collection) {
+const collectionName = "user-locations";
+const usersCollectionName = "users";
+
+function apiProvider(db) {
+  const collection = db.collection(collectionName);
+  const usersCollection = db.collection(usersCollectionName);
+
   app.use(express.json());
 
   app.post("/save-location", async (req, res) => {
@@ -36,7 +42,7 @@ function apiProvider(collection) {
       const locations = await collection
         .find({ email: { $ne: email } })
         .toArray();
-      const oldArr = await collection.find().toArray();
+
       res.json(locations);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -82,9 +88,55 @@ function apiProvider(collection) {
     }
   });
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  app.get("/user-info", async (req, res) => {
+    const { email } = req.query;
+    try {
+      if (!email) {
+        return res
+          .status(400)
+          .json({ message: "Email query parameter is required" });
+      }
+
+      // Find the user by email
+      const user = await usersCollection.findOne({ email: email });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return the user information
+      const { url, name, birth } = user;
+      res.json({ url, name, birth });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
   });
+
+  app.get("/user-avatar", async (req, res) => {
+    const { email } = req.query;
+    try {
+      if (!email) {
+        return res
+          .status(400)
+          .json({ message: "Email query parameter is required" });
+      }
+
+      // Find the user by email
+      const user = await usersCollection.findOne({ email: email });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return the user information
+      const { url } = user;
+      res.json({ url });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  socketProvider(app, db);
 }
 
 module.exports = { apiProvider };
